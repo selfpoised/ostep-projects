@@ -16,10 +16,12 @@ wunzip(char * filename)
         exit(1);
     }
     
-    struct ZippedItem item;
-    while(fread(&item, sizeof(item), 1, fp) == 1){
-        for(int i = 1; i <= item.length; i++){
-            printf("%c", item.c);
+    int count = 0;
+    while(fread(&count, sizeof(int), 1, fp) == 1){
+        int c = 0;
+        fread(&c, 1, 1, fp);
+        for(int i = 1; i <= count; i++){
+            printf("%c", (char)c);
         }
     }
     

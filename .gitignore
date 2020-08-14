@@ -2,6 +2,7 @@ initial-utilities/wcat/tests-out/*
 initial-utilities/wgrep/tests-out/
 initial-utilities/wzip/tests-out/*
 initial-reverse/tests-out/*
+initial-utilities/wunzip/tests-out/*
 
 initial-utilities/wgrep/wgrep
 initial-utilities/wzip/wunzip
@@ -9,6 +10,8 @@ initial-utilities/wzip/wzip
 initial-utilities/wcat/wcat
 
 ostep.xcworkspace/*
+
+initial-utilities/wunzip/wunzip
 
 initial-reverse/input.txt
 initial-reverse/output.txt
