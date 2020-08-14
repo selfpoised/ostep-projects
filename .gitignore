@@ -1,6 +1,7 @@
 initial-utilities/wcat/tests-out/*
 initial-utilities/wgrep/tests-out/
 initial-utilities/wzip/tests-out/*
+initial-reverse/tests-out/*
 
 initial-utilities/wgrep/wgrep
 initial-utilities/wzip/wunzip
