@@ -19,3 +19,7 @@ initial-reverse/reverse
 initial-utilities/wzip/t
 initial-utilities/wzip/t.z
 initial-utilities/wzip/t1
+
+processes-shell/t
+processes-shell/wish
+processes-shell/wish1
