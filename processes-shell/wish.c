@@ -25,6 +25,7 @@ void exec_single(char *line){
     char *myargs[10];
     int count = 0;
     char *found;
+    
     while( (found = strsep(&line," ")) != NULL ){
         if(count == 9){
             write(STDERR_FILENO, error_message, strlen(error_message));
@@ -37,10 +38,25 @@ void exec_single(char *line){
             myargs[0] = strdup(path);
             printf("%s ", myargs[0]);
         } else {
-            // https://blog.csdn.net/aaajj/article/details/53426767?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
-            // 大坑：数组参数不能有空格，换行等，否则死活执行不了。是因为输入最后一个参数后回车导致有换行符，必须trim
-            myargs[count] = strdup(trim(found));
-            printf("%s ", myargs[count]);
+            // redirection
+            if(strcmp(trim(found), ">") == 0){
+                // The reason this redirection works is due to an assumption about how the operating
+                // system manages file descriptors. Specifically, UNIX systems start looking for free file descriptors at zero.
+                // In this case, STDOUT FILENO will be the first available one and thus get assigned when open() is called.
+                // Subsequent writes by the child process to the standard output file descriptor, for example by routines such
+                // as printf(), will then be routed transparently to the newly-opened file instead of the screen
+                close(STDOUT_FILENO);
+                
+                found = strsep(&line," ");
+                open(trim(found), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+                
+                break;
+            } else {
+                // https://blog.csdn.net/aaajj/article/details/53426767?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
+                // 大坑：数组参数不能有空格，换行等，否则死活执行不了。是因为输入最后一个参数后回车导致有换行符，必须trim
+                myargs[count] = strdup(trim(found));
+                printf("%s ", myargs[count]);
+            }
         }
         count++;
     }
