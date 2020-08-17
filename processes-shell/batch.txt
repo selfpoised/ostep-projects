@@ -1,0 +1,2 @@
+ls /tmp
+ls -l /var
