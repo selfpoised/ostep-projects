@@ -8,6 +8,7 @@
 
 const char error_message[30] = "An error has occurred\n";
 
+// https://stackoverflow.com/questions/656542/trim-a-string-in-c
 char *trim(char *s) {
     char *ptr;
     if (!s)
