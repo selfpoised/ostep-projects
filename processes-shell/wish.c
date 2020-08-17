@@ -21,15 +21,22 @@ char *trim(char *s) {
 }
 
 void exec_single(char *line){
+    char *line_refine = trim(line);
+    
     // support at most 10 parameters
     char *myargs[10];
     int count = 0;
     char *found;
     
-    while( (found = strsep(&line," ")) != NULL ){
+    while( (found = strsep(&line_refine," ")) != NULL ){
         if(count == 9){
             write(STDERR_FILENO, error_message, strlen(error_message));
             exit(1);
+        }
+        
+        // 跳过拆分过程中可能的空格
+        if(strlen(trim(found)) == 0){
+            continue;
         }
 
         if(count == 0){
@@ -47,7 +54,7 @@ void exec_single(char *line){
                 // as printf(), will then be routed transparently to the newly-opened file instead of the screen
                 close(STDOUT_FILENO);
                 
-                found = strsep(&line," ");
+                found = strsep(&line_refine," ");
                 open(trim(found), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
                 
                 break;
@@ -118,22 +125,40 @@ int main(int argc, char *argv[]) {
             exit(0);
         }
         
-        int rc = fork();
-        if (rc < 0) {
-            // fork failed
-            fprintf(stderr, "fork failed\n");
-            exit(1);
-        } else if (rc == 0) {
-            // child: redirect standard output to a file
-            // close(STDOUT_FILENO);
-            // open("./ls.output", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-            
-            exec_single(line);
+        // Parallel Commands: cmd1 & cmd2 args1 args2 & cmd3 args1
+        if(strstr(line, "&") != NULL){
+            printf("%s\n", line);
+            char *found;
+            while( (found = strsep(&line,"&")) != NULL ){
+                char *t = strdup(trim(found));
+                int rc = fork();
+                if (rc < 0) {
+                    // fork failed
+                    fprintf(stderr, "fork failed\n");
+                    exit(1);
+                } else if (rc == 0) {
+                    // exec_single(trim(found));
+                    exec_single(t);
+                }
+            }
         } else {
-            // parent goes down this path (main)
-            wait(NULL);
-            fprintf(stdout, "wish> ");
+            int rc = fork();
+            if (rc < 0) {
+                // fork failed
+                fprintf(stderr, "fork failed\n");
+                exit(1);
+            } else if (rc == 0) {
+                // child: redirect standard output to a file
+                // close(STDOUT_FILENO);
+                // open("./ls.output", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+                
+                exec_single(line);
+            }
         }
+        
+        // parent goes down this path (main)
+        wait(NULL);
+        fprintf(stdout, "wish> ");
     }
     
     free(line);
