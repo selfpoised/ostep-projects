@@ -8,6 +8,10 @@
 
 const char error_message[30] = "An error has occurred\n";
 
+char *trim(char *s);
+void exec_single(char *line);
+void exec_batch(char *file);
+
 // https://stackoverflow.com/questions/656542/trim-a-string-in-c
 char *trim(char *s) {
     char *ptr;
