@@ -23,3 +23,9 @@ initial-utilities/wzip/t1
 processes-shell/t
 processes-shell/wish
 processes-shell/wish1
+
+exit
+output
+tests-out/1.err
+tests-out/1.out
+tests-out/1.rc
