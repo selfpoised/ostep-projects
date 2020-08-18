@@ -12,6 +12,70 @@ char *trim(char *s);
 void exec_single(char *line);
 void exec_batch(char *file);
 
+int main(int argc, char *argv[]) {
+    // batch mode
+    if(argc >= 2){
+        // fprintf(stdout, "batch mode: \n");
+        exec_batch(argv[1]);
+        exit(0);
+    }
+    
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t nread;
+    
+    fprintf(stdout, "wish> ");
+    while((nread = getline(&line, &len, stdin)) > 0) {
+        if (strcmp(trim(line), "exit\n") == 0 || strcmp(trim(line), "exit") == 0)
+        {
+            // use built-in exit
+            char *myargs[2];
+            myargs[0] = strdup("./exit");
+            myargs[1] = NULL;
+            execv(myargs[0], myargs);
+            
+            // exit(0);
+        }
+        
+        // Parallel Commands: cmd1 & cmd2 args1 args2 & cmd3 args1
+        if(strstr(line, "&") != NULL){
+            // printf("%s\n", line);
+            char *found;
+            while( (found = strsep(&line,"&")) != NULL ){
+                char *t = strdup(trim(found));
+                int rc = fork();
+                if (rc < 0) {
+                    // fork failed
+                    fprintf(stderr, "fork failed\n");
+                    exit(1);
+                } else if (rc == 0) {
+                    // exec_single(trim(found));
+                    exec_single(t);
+                }
+            }
+        } else {
+            int rc = fork();
+            if (rc < 0) {
+                // fork failed
+                fprintf(stderr, "fork failed\n");
+                exit(1);
+            } else if (rc == 0) {
+                // child: redirect standard output to a file
+                // close(STDOUT_FILENO);
+                // open("./ls.output", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+                
+                exec_single(line);
+            }
+        }
+        
+        // parent goes down this path (main)
+        wait(NULL);
+        fprintf(stdout, "wish> ");
+    }
+    
+    free(line);
+}
+
 // https://stackoverflow.com/questions/656542/trim-a-string-in-c
 char *trim(char *s) {
     char *ptr;
@@ -111,70 +175,6 @@ void exec_batch(char *file){
     free(line);
     
     fclose(fp);
-}
-
-int main(int argc, char *argv[]) {
-    // batch mode
-    if(argc >= 2){
-        // fprintf(stdout, "batch mode: \n");
-        exec_batch(argv[1]);
-        exit(0);
-    }
-    
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t nread;
-    
-    fprintf(stdout, "wish> ");
-    while((nread = getline(&line, &len, stdin)) > 0) {
-        if (strcmp(trim(line), "exit\n") == 0 || strcmp(trim(line), "exit") == 0)
-        {
-            // use built-in exit
-            char *myargs[2];
-            myargs[0] = strdup("./exit");
-            myargs[1] = NULL;
-            execv(myargs[0], myargs);
-            
-            // exit(0);
-        }
-        
-        // Parallel Commands: cmd1 & cmd2 args1 args2 & cmd3 args1
-        if(strstr(line, "&") != NULL){
-            // printf("%s\n", line);
-            char *found;
-            while( (found = strsep(&line,"&")) != NULL ){
-                char *t = strdup(trim(found));
-                int rc = fork();
-                if (rc < 0) {
-                    // fork failed
-                    fprintf(stderr, "fork failed\n");
-                    exit(1);
-                } else if (rc == 0) {
-                    // exec_single(trim(found));
-                    exec_single(t);
-                }
-            }
-        } else {
-            int rc = fork();
-            if (rc < 0) {
-                // fork failed
-                fprintf(stderr, "fork failed\n");
-                exit(1);
-            } else if (rc == 0) {
-                // child: redirect standard output to a file
-                // close(STDOUT_FILENO);
-                // open("./ls.output", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-                
-                exec_single(line);
-            }
-        }
-        
-        // parent goes down this path (main)
-        wait(NULL);
-        fprintf(stdout, "wish> ");
-    }
-    
-    free(line);
 }
 
 // gcc -o wish wish.c -Wall -Werror
