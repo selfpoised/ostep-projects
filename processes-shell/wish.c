@@ -40,10 +40,13 @@ void exec_single(char *line){
         }
 
         if(count == 0){
-            char path[256] = "/bin/";
-            strncat(path, trim(found), 250);
-            myargs[0] = strdup(path);
-            printf("%s ", myargs[0]);
+            if(strcmp(trim(found), "cd") == 0){
+                myargs[0] = strdup("cd");
+            } else {
+                char path[256] = "/bin/";
+                strncat(path, trim(found), 250);
+                myargs[0] = strdup(path);
+            }
         } else {
             // redirection
             if(strcmp(trim(found), ">") == 0){
@@ -62,13 +65,13 @@ void exec_single(char *line){
                 // https://blog.csdn.net/aaajj/article/details/53426767?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
                 // 大坑：数组参数不能有空格，换行等，否则死活执行不了。是因为输入最后一个参数后回车导致有换行符，必须trim
                 myargs[count] = strdup(trim(found));
-                printf("%s ", myargs[count]);
+                // printf("%s ", myargs[count]);
             }
         }
         count++;
     }
     myargs[count] = NULL;
-    printf("\n");
+    // printf("\n");
     
     execv(myargs[0], myargs);
 }
@@ -87,7 +90,7 @@ void exec_batch(char *file){
     int count = 0;
     while((nread = getline(&line, &len, fp)) != -1) {
         count++;
-        fprintf(stdout, "%d %s\n", count, line);
+        // fprintf(stdout, "%d %s\n", count, line);
     
         int rc = fork();
         if (rc < 0) {
@@ -109,7 +112,7 @@ void exec_batch(char *file){
 int main(int argc, char *argv[]) {
     // batch mode
     if(argc >= 2){
-        fprintf(stdout, "batch mode: \n");
+        // fprintf(stdout, "batch mode: \n");
         exec_batch(argv[1]);
         exit(0);
     }
@@ -120,7 +123,7 @@ int main(int argc, char *argv[]) {
     
     fprintf(stdout, "wish> ");
     while((nread = getline(&line, &len, stdin)) > 0) {
-        if (strcmp(line, "exit\n") == 0)
+        if (strcmp(trim(line), "exit\n") == 0 || strcmp(trim(line), "exit") == 0)
         {
             // use built-in exit
             char *myargs[2];
@@ -133,7 +136,7 @@ int main(int argc, char *argv[]) {
         
         // Parallel Commands: cmd1 & cmd2 args1 args2 & cmd3 args1
         if(strstr(line, "&") != NULL){
-            printf("%s\n", line);
+            // printf("%s\n", line);
             char *found;
             while( (found = strsep(&line,"&")) != NULL ){
                 char *t = strdup(trim(found));
