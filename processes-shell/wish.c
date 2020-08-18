@@ -122,7 +122,13 @@ int main(int argc, char *argv[]) {
     while((nread = getline(&line, &len, stdin)) > 0) {
         if (strcmp(line, "exit\n") == 0)
         {
-            exit(0);
+            // use built-in exit
+            char *myargs[2];
+            myargs[0] = strdup("./exit");
+            myargs[1] = NULL;
+            execv(myargs[0], myargs);
+            
+            // exit(0);
         }
         
         // Parallel Commands: cmd1 & cmd2 args1 args2 & cmd3 args1
