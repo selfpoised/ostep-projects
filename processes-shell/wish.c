@@ -13,6 +13,7 @@ void exec_single(char *line);
 void exec_batch(char *file);
 void my_exit();
 void check_command(char *command);
+char *prepare_command(char *command);
 
 // https://man7.org/linux/man-pages/man7/environ.7.html
 // program environments:
@@ -106,9 +107,16 @@ void exec_single(char *line){
             if(strcmp(trim(found), "cd") == 0 || strcmp(trim(found), "exit") == 0 || strcmp(trim(found), "path") == 0){
                 myargs[0] = strdup(trim(found));
             } else {
-                char path[256] = "/bin/";
-                strncat(path, trim(found), 250);
-                myargs[0] = strdup(path);
+//                char path[1024];
+//                bzero(path, 1024);
+//                char *p = getenv("PATH");
+//                strncat(path, p, strlen(p));
+//                strncat(path + strlen(p), "/", 1);
+//                strncat(path + strlen(p) + 1, trim(found), strlen(trim(found)));
+//                myargs[0] = strdup(path);
+                
+                char *p = prepare_command(trim(found));
+                myargs[0] = p;
             }
         } else {
             // redirection
@@ -159,13 +167,23 @@ void exec_single(char *line){
         if (count == 1) {
             write(STDERR_FILENO, error_message, strlen(error_message));
         } else {
+            // set program path
             char path[2048];
             bzero(path, 2048);
             int bytes = 0;
+    
+            strncpy(path+bytes, "/bin:", strlen("/bin:"));
+            bytes = bytes + strlen("/bin:");
             for(int i=1;i<count;i++){
                 strncpy(path+bytes, myargs[i], strlen(myargs[i]));
-                bytes = strlen(myargs[i]) + bytes;
+                bytes = bytes + strlen(myargs[i]);
+                strncpy(path+bytes+1, ":", 1);
+                bytes = bytes + 1;
             }
+            if(path[strlen(path)-1] == ':'){
+                path[strlen(path)-1] = 0;
+            }
+        
             int r = setenv("PATH", path, 1);
             if(r != 0){
                 write(STDERR_FILENO, error_message, strlen(error_message));
@@ -219,17 +237,39 @@ void my_exit(){
     execv(myargs[0], myargs);
 }
 
+// 根据/bin以及用户设置的路径查找命令绝对路径
+char *prepare_command(char *command){
+    char *found;
+    
+    char *path = getenv("PATH");
+    char *p = malloc(1024);
+    while((found = strsep(&path,":")) != NULL){
+        bzero(p, 1024);
+        strncpy(p, found, strlen(found));
+        strncpy(p+strlen(found), "/", 1);
+        strncpy(p+strlen(found)+1, command, strlen(command));
+        int i = access(p, X_OK);
+        if(i == 0){
+            return p;
+        }
+    }
+    
+    write(STDERR_FILENO, error_message, strlen(error_message));
+    exit(0);
+}
+
 void check_command(char *command){
     // ./... 当前路径
-    if(command[0] == '.'){
-        return;
-    }
+//    if(command[0] == '.'){
+//        return;
+//    }
     
 //    char path[2048];
 //    bzero(path, 2048);
 //    strncpy(path, "/bin/", strlen("/bin/"));
 //    strncpy(path+strlen("/bin/"), command, strlen(command));
     // printf("%s\n", command);
+    // printf("path: %s\n", getenv("PATH"));
     int i = access(command, X_OK);
     if(i != 0){
         write(STDERR_FILENO, error_message, strlen(error_message));
