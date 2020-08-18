@@ -12,8 +12,28 @@ char *trim(char *s);
 void exec_single(char *line);
 void exec_batch(char *file);
 void my_exit();
+void check_command(char *command);
+
+// https://man7.org/linux/man-pages/man7/environ.7.html
+// program environments:
+//    COMMAND_MODE=unix2003
+//    PATH=/opt/local/bin:/opt/local/sbin:/usr/local/bin:...
+//    HOME=/Users/wanghao18
+//    SHELL=/bin/zsh
+//    ...
+//  int i = 0;
+//  while(environ[i] != NULL){
+//    printf("%s\n", environ[i]);
+//    i++;
+//  }
+extern char **environ;
 
 int main(int argc, char *argv[]) {
+    int r = setenv("PATH", "/bin", 1);
+    if(r != 0){
+        write(STDERR_FILENO, error_message, strlen(error_message));
+    }
+    
     // batch mode
     if(argc >= 2){
         // fprintf(stdout, "batch mode: \n");
@@ -83,7 +103,7 @@ void exec_single(char *line){
         }
 
         if(count == 0){
-            if(strcmp(trim(found), "cd") == 0 || strcmp(trim(found), "exit") == 0){
+            if(strcmp(trim(found), "cd") == 0 || strcmp(trim(found), "exit") == 0 || strcmp(trim(found), "path") == 0){
                 myargs[0] = strdup(trim(found));
             } else {
                 char path[256] = "/bin/";
@@ -115,6 +135,8 @@ void exec_single(char *line){
     myargs[count] = NULL;
     
     if(strcmp(myargs[0], "cd") == 0){
+        // https://indradhanush.github.io/blog/writing-a-unix-shell-part-2/
+        
         // The current working directory of the parent has not changed,
         // since the command was executed in the child. As a result,
         // the cd command although successful, did not produce the result that we desired.
@@ -133,7 +155,26 @@ void exec_single(char *line){
         } else {
             my_exit();
         }
-    }else {
+    } else if(strcmp(myargs[0], "path") == 0){
+        if (count == 1) {
+            write(STDERR_FILENO, error_message, strlen(error_message));
+        } else {
+            char path[2048];
+            bzero(path, 2048);
+            int bytes = 0;
+            for(int i=1;i<count;i++){
+                strncpy(path+bytes, myargs[i], strlen(myargs[i]));
+                bytes = strlen(myargs[i]) + bytes;
+            }
+            int r = setenv("PATH", path, 1);
+            if(r != 0){
+                write(STDERR_FILENO, error_message, strlen(error_message));
+            }
+        }
+    } else {
+        // check path
+        check_command(myargs[0]);
+        
         int rc = fork();
         if (rc < 0) {
             // fork failed
@@ -176,6 +217,24 @@ void my_exit(){
     myargs[0] = strdup("./exit");
     myargs[1] = NULL;
     execv(myargs[0], myargs);
+}
+
+void check_command(char *command){
+    // ./... 当前路径
+    if(command[0] == '.'){
+        return;
+    }
+    
+//    char path[2048];
+//    bzero(path, 2048);
+//    strncpy(path, "/bin/", strlen("/bin/"));
+//    strncpy(path+strlen("/bin/"), command, strlen(command));
+    // printf("%s\n", command);
+    int i = access(command, X_OK);
+    if(i != 0){
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        exit(0);
+    }
 }
 
 // gcc -o wish wish.c -Wall -Werror
