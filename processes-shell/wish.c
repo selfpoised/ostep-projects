@@ -87,12 +87,40 @@ char *trim(char *s) {
 void exec_single(char *line){
     char *line_refine = trim(line);
     
-    // support at most 10 parameters
+    char *pRedirect = strstr(line, ">");
+    
+    char *found = strsep(&line_refine,">");
+    char *first_part = strdup(found);
+    char *redirect_part = line_refine;
+        
+    // 对redirect特殊处理
+    // like: ls >
+    if(pRedirect != NULL && (redirect_part == NULL || 0 == strlen(redirect_part))){
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        exit(0);
+    }
+    char redirect_path[256];
+    bzero(redirect_path, 256);
+    if(redirect_part != NULL && strlen(redirect_part) > 0){
+        char *p_output = trim(redirect_part);
+        char *pOutput;
+        int output_count = 0;
+        while((pOutput = strsep(&p_output," ")) != NULL){
+            output_count++;
+        }
+        if(output_count != 1){
+            // like: ls file1 file2 ...
+            write(STDERR_FILENO, error_message, strlen(error_message));
+            exit(0);
+        }
+        
+        strcpy(redirect_path, trim(redirect_part));
+    }
+    
+    // command split: support at most 10 parameters
     char *myargs[10];
     int count = 0;
-    char *found;
-    
-    while( (found = strsep(&line_refine," ")) != NULL ){
+    while( (found = strsep(&first_part," ")) != NULL ){
         if(count == 9){
             write(STDERR_FILENO, error_message, strlen(error_message));
             exit(1);
@@ -112,41 +140,9 @@ void exec_single(char *line){
                 myargs[0] = p;
             }
         } else {
-            // redirection
-            if(strcmp(trim(found), ">") == 0){
-                if(line_refine == NULL || strlen(trim(line_refine)) == 0){
-                    write(STDERR_FILENO, error_message, strlen(error_message));
-                    exit(0);
-                }
-                char *p_output = strdup(trim(line_refine));
-                char *pOutput;
-                int output_count = 0;
-                while((pOutput = strsep(&p_output," ")) != NULL){
-                    output_count++;
-                }
-                if(output_count != 1){
-                    write(STDERR_FILENO, error_message, strlen(error_message));
-                    exit(0);
-                }
-                
-                // The reason this redirection works is due to an assumption about how the operating
-                // system manages file descriptors. Specifically, UNIX systems start looking for free file descriptors at zero.
-                // In this case, STDOUT FILENO will be the first available one and thus get assigned when open() is called.
-                // Subsequent writes by the child process to the standard output file descriptor, for example by routines such
-                // as printf(), will then be routed transparently to the newly-opened file instead of the screen
-                close(STDOUT_FILENO);
-                
-                found = strsep(&line_refine," ");
-                int ret = open(trim(found), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-                if(ret < 0){
-                    write(STDERR_FILENO, error_message, strlen(error_message));
-                }
-                break;
-            } else {
-                // https://blog.csdn.net/aaajj/article/details/53426767?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
-                // 大坑：数组参数不能有空格，换行等，否则死活执行不了。是因为输入最后一个参数后回车导致有换行符，必须trim
-                myargs[count] = strdup(trim(found));
-            }
+            // https://blog.csdn.net/aaajj/article/details/53426767?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
+            // 大坑：数组参数不能有空格，换行等，否则死活执行不了。是因为输入最后一个参数后回车导致有换行符，必须trim
+            myargs[count] = strdup(trim(found));
         }
         count++;
     }
@@ -209,6 +205,19 @@ void exec_single(char *line){
             fprintf(stderr, "fork failed\n");
             exit(1);
         } else if (rc == 0) {
+            if(strlen(redirect_path) > 0){
+                // The reason this redirection works is due to an assumption about how the operating
+                // system manages file descriptors. Specifically, UNIX systems start looking for free file descriptors at zero.
+                // In this case, STDOUT FILENO will be the first available one and thus get assigned when open() is called.
+                // Subsequent writes by the child process to the standard output file descriptor, for example by routines such
+                // as printf(), will then be routed transparently to the newly-opened file instead of the screen
+                close(STDOUT_FILENO);
+                int ret = open(redirect_path, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+                if(ret < 0){
+                    write(STDERR_FILENO, error_message, strlen(error_message));
+                    exit(0);
+                }
+            }
             execv(myargs[0], myargs);
         } else {
             return;
