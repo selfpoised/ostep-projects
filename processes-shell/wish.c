@@ -79,31 +79,25 @@ int main(int argc, char *argv[]) {
 }
 
 // https://stackoverflow.com/questions/656542/trim-a-string-in-c
-char *trim(char *s) {
-    char *ptr;
-    if (!s)
-        return NULL;   // handle NULL string
-    if (!*s)
-        return s;      // handle empty string
-    for (ptr = s + strlen(s) - 1; (ptr >= s) && isspace(*ptr); --ptr);
-    ptr[1] = '\0';
+char *ltrim(char *s)
+{
+    while(isspace(*s)) s++;
     return s;
+}
+char *rtrim(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+char *trim(char *s)
+{
+    return rtrim(ltrim(s));
 }
 
 void exec_single(char *line){
     if(line == NULL || 0 == strlen(trim(line))){
-        return;
-    }
-    
-    if(strstr(line, "&") != NULL){
-        char *found;
-        while((found = strsep(&line,"&")) != NULL){
-            if(strlen(trim(found)) > 0){
-                char *t = strdup(trim(found));
-                exec_single(t);
-            }
-        }
-        
         return;
     }
     
@@ -113,6 +107,11 @@ void exec_single(char *line){
     
     char *found = strsep(&line_refine,">");
     char *first_part = strdup(found);
+    if(first_part == NULL || strlen(trim(first_part)) == 0){
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        exit(0);
+    }
+    
     char *redirect_part = line_refine;
         
     // 对redirect特殊处理
@@ -138,16 +137,16 @@ void exec_single(char *line){
         
         strcpy(redirect_path, trim(redirect_part));
     }
-    
+        
     // command split: support at most 10 parameters
     char *myargs[10];
     int count = 0;
-    while( (found = strsep(&first_part," ")) != NULL ){
+    while((found = strsep(&first_part," ")) != NULL){
         if(count == 9){
             write(STDERR_FILENO, error_message, strlen(error_message));
             exit(1);
         }
-        
+                
         // 跳过拆分过程中可能的空格
         if(strlen(trim(found)) == 0){
             continue;
@@ -193,7 +192,12 @@ void exec_single(char *line){
         }
     } else if(strcmp(myargs[0], "path") == 0){
         if (count == 1) {
-            write(STDERR_FILENO, error_message, strlen(error_message));
+            // write(STDERR_FILENO, error_message, strlen(error_message));
+            int r = setenv("PATH", "/bin", 1);
+            if(r != 0){
+                write(STDERR_FILENO, error_message, strlen(error_message));
+                exit(0);
+            }
         } else {
             // set program path
             char path[2048];
@@ -261,8 +265,20 @@ void exec_batch(char *file){
     while((nread = getline(&line, &len, fp)) != -1) {
         count++;
         
-        exec_single(line);
-        
+        if(strstr(line, "&") != NULL){
+            char *found;
+            char *p = strdup(line);
+            while((found = strsep(&p,"&")) != NULL){
+                if(strlen(trim(found)) > 0){
+                    char *t = strdup(trim(found));
+                    exec_single(t);
+                }
+            }
+            free(p);
+        } else {
+            exec_single(line);
+        }
+
         wait(NULL);
     }
     free(line);
@@ -281,7 +297,16 @@ void my_exit(){
 char *prepare_command(char *command){
     char *found;
     
-    char *path = getenv("PATH");
+    // printf("addr: %p\n", &getenv("PATH")[0]);
+    
+    // https://man7.org/linux/man-pages/man3/getenv.3.html
+    // As typically implemented, getenv() returns a pointer to a string
+    // within the environment list.  The caller must take care not to modify
+    // this string, since that would change the environment of the process.
+    
+    // each call of getenv will return the same address
+    // strsep will change it if not strdup
+    char *path = strdup(getenv("PATH"));
     char *p = malloc(1024);
     while((found = strsep(&path,":")) != NULL){
         bzero(p, 1024);
