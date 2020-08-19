@@ -36,8 +36,13 @@ int main(int argc, char *argv[]) {
     }
     
     // batch mode
-    if(argc >= 2){
-        // fprintf(stdout, "batch mode: \n");
+    if(argc > 2){
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        exit(1);
+    }
+    
+    // batch mode
+    if(argc == 2){
         exec_batch(argv[1]);
         exit(0);
     }
@@ -54,7 +59,6 @@ int main(int argc, char *argv[]) {
         
         // Parallel Commands: cmd1 & cmd2 args1 args2 & cmd3 args1
         if(strstr(line, "&") != NULL){
-            // printf("%s\n", line);
             char *found;
             while( (found = strsep(&line,"&")) != NULL ){
                 char *t = strdup(trim(found));
@@ -85,6 +89,10 @@ char *trim(char *s) {
 }
 
 void exec_single(char *line){
+    if(line == NULL || 0 == strlen(trim(line))){
+        return;
+    }
+    
     char *line_refine = trim(line);
     
     char *pRedirect = strstr(line, ">");
