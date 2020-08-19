@@ -202,15 +202,11 @@ void exec_single(char *line){
             // set program path
             char path[2048];
             bzero(path, 2048);
-            int bytes = 0;
     
-            strncpy(path+bytes, "/bin:", strlen("/bin:"));
-            bytes = bytes + strlen("/bin:");
+            strcat(path, "/bin:");
             for(int i=1;i<count;i++){
-                strncpy(path+bytes, myargs[i], strlen(myargs[i]));
-                bytes = bytes + strlen(myargs[i]);
-                strncpy(path+bytes+1, ":", 1);
-                bytes = bytes + 1;
+                strcat(path, myargs[i]);
+                strcat(path, ":");
             }
             if(path[strlen(path)-1] == ':'){
                 path[strlen(path)-1] = 0;
