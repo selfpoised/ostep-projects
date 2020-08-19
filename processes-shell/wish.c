@@ -61,8 +61,10 @@ int main(int argc, char *argv[]) {
         if(strstr(line, "&") != NULL){
             char *found;
             while( (found = strsep(&line,"&")) != NULL ){
-                char *t = strdup(trim(found));
-                exec_single(t);
+                if(strlen(trim(found)) > 0){
+                    char *t = strdup(trim(found));
+                    exec_single(t);
+                }
             }
         } else {
             exec_single(line);
@@ -90,6 +92,18 @@ char *trim(char *s) {
 
 void exec_single(char *line){
     if(line == NULL || 0 == strlen(trim(line))){
+        return;
+    }
+    
+    if(strstr(line, "&") != NULL){
+        char *found;
+        while((found = strsep(&line,"&")) != NULL){
+            if(strlen(trim(found)) > 0){
+                char *t = strdup(trim(found));
+                exec_single(t);
+            }
+        }
+        
         return;
     }
     
