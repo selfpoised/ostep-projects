@@ -107,14 +107,7 @@ void exec_single(char *line){
             if(strcmp(trim(found), "cd") == 0 || strcmp(trim(found), "exit") == 0 || strcmp(trim(found), "path") == 0){
                 myargs[0] = strdup(trim(found));
             } else {
-//                char path[1024];
-//                bzero(path, 1024);
-//                char *p = getenv("PATH");
-//                strncat(path, p, strlen(p));
-//                strncat(path + strlen(p), "/", 1);
-//                strncat(path + strlen(p) + 1, trim(found), strlen(trim(found)));
-//                myargs[0] = strdup(path);
-                
+                // complete command with absolute path
                 char *p = prepare_command(trim(found));
                 myargs[0] = p;
             }
@@ -129,8 +122,10 @@ void exec_single(char *line){
                 close(STDOUT_FILENO);
                 
                 found = strsep(&line_refine," ");
-                open(trim(found), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-                
+                int ret = open(trim(found), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+                if(ret < 0){
+                    write(STDERR_FILENO, error_message, strlen(error_message));
+                }
                 break;
             } else {
                 // https://blog.csdn.net/aaajj/article/details/53426767?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
@@ -207,7 +202,6 @@ void exec_single(char *line){
 }
 
 void exec_batch(char *file){
-    // support at most 10 parameters
     FILE *fp = fopen(file, "r");
     if (fp == NULL) {
         write(STDERR_FILENO, error_message, strlen(error_message));
@@ -259,17 +253,6 @@ char *prepare_command(char *command){
 }
 
 void check_command(char *command){
-    // ./... 当前路径
-//    if(command[0] == '.'){
-//        return;
-//    }
-    
-//    char path[2048];
-//    bzero(path, 2048);
-//    strncpy(path, "/bin/", strlen("/bin/"));
-//    strncpy(path+strlen("/bin/"), command, strlen(command));
-    // printf("%s\n", command);
-    // printf("path: %s\n", getenv("PATH"));
     int i = access(command, X_OK);
     if(i != 0){
         write(STDERR_FILENO, error_message, strlen(error_message));
