@@ -114,6 +114,21 @@ void exec_single(char *line){
         } else {
             // redirection
             if(strcmp(trim(found), ">") == 0){
+                if(line_refine == NULL || strlen(trim(line_refine)) == 0){
+                    write(STDERR_FILENO, error_message, strlen(error_message));
+                    exit(0);
+                }
+                char *p_output = strdup(trim(line_refine));
+                char *pOutput;
+                int output_count = 0;
+                while((pOutput = strsep(&p_output," ")) != NULL){
+                    output_count++;
+                }
+                if(output_count != 1){
+                    write(STDERR_FILENO, error_message, strlen(error_message));
+                    exit(0);
+                }
+                
                 // The reason this redirection works is due to an assumption about how the operating
                 // system manages file descriptors. Specifically, UNIX systems start looking for free file descriptors at zero.
                 // In this case, STDOUT FILENO will be the first available one and thus get assigned when open() is called.
