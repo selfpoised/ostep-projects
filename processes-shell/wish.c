@@ -192,7 +192,7 @@ void exec_single(char *line){
         }
     } else if(strcmp(myargs[0], "path") == 0){
         if (count == 1) {
-            // write(STDERR_FILENO, error_message, strlen(error_message));
+            write(STDERR_FILENO, error_message, strlen(error_message));
             int r = setenv("PATH", "/bin", 1);
             if(r != 0){
                 write(STDERR_FILENO, error_message, strlen(error_message));
