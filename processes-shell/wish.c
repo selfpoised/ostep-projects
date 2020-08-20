@@ -240,7 +240,7 @@ void exec_single(char *line){
                     exit(0);
                 }
             }
-            execv(myargs[0], myargs);
+            execv(strdup(myargs[0]), myargs);
         } else {
             return;
         }
@@ -268,14 +268,23 @@ void exec_batch(char *file){
                 if(strlen(trim(found)) > 0){
                     char *t = strdup(trim(found));
                     exec_single(t);
+                    free(t);
                 }
             }
             free(p);
         } else {
-            exec_single(line);
+            exec_single(strdup(trim(line)));
         }
 
-        wait(NULL);
+        // instead of a mere wait(NULL) which just wait for any child process terminates
+        // have to wait for all since there are test commands like 'cat /tmp/xx1 & cat /tmp/xx2; ls /tmp'
+        // then 'ls /tmp' may run before 'cat /tmp/xx1' or 'cat /tmp/xx2', generating incorrect output
+        // tests 19, 20 ... rely on this
+        // https://stackoverflow.com/questions/19461744/how-to-make-parent-wait-for-all-child-processes-to-finish
+        // wait(): on success, returns the process ID of the terminated child;on error, -1 is returned.
+        int status = 0;
+        pid_t wpid;
+        while ((wpid = wait(&status)) > 0);
     }
     free(line);
     
