@@ -66,7 +66,7 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs)
     {
         // static
         strcpy(cgiargs, "");
-        sprintf(filename, ".%s", uri);
+        sprintf(filename, "./%s", uri);
         if (uri[strlen(uri) - 1] == '/')
         {
             strcat(filename, "index.html");
