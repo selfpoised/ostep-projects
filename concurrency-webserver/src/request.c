@@ -86,7 +86,7 @@ int request_parse_uri(char *uri, char *filename, char *cgiargs)
         {
             strcpy(cgiargs, "");
         }
-        sprintf(filename, ".%s", uri);
+        sprintf(filename, "./%s", uri);
         return 0;
     }
 }
