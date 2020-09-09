@@ -3,8 +3,7 @@
 #include "io_helper.h"
 #include <pthread.h>
 #include <stdlib.h> 
-
-#define Pthread_create(thread, attr, start_routine, arg) assert(pthread_create(thread, attr, start_routine, arg) == 0);
+#include "common_threads.h"
 
 char default_root[] = ".";
 char FIFO[] = "FIFO";
@@ -60,9 +59,6 @@ int main(int argc, char *argv[])
 
 		pthread_t p;
 		Pthread_create(&p, NULL, run, (void *) (long long) conn_fd);
-
-		// request_handle(conn_fd);
-		// close_or_die(conn_fd);
 	}
 	return 0;
 }
