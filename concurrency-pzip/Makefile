@@ -4,11 +4,11 @@
 
 CC = gcc
 CFLAGS = -Wall -pthread
-OBJS = pzip.o pzip1.o io_helper.o 
+OBJS = pzip.o pzip1.o pzip2.o io_helper.o 
 
 .SUFFIXES: .c .o 
 
-all: pzip pzip1
+all: pzip pzip1 pzip2
 
 pzip: pzip.o io_helper.o 
 	$(CC) $(CFLAGS) -o pzip pzip.o io_helper.o
@@ -16,8 +16,11 @@ pzip: pzip.o io_helper.o
 pzip1: pzip1.o io_helper.o
 	$(CC) $(CFLAGS) -o pzip1 pzip1.o io_helper.o
 
+pzip2: pzip2.o io_helper.o
+	$(CC) $(CFLAGS) -o pzip2 pzip2.o io_helper.o
+
 .c.o:
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean:
-	-rm -f $(OBJS) pzip pzip1
+	-rm -f $(OBJS) pzip pzip1 pzip2
