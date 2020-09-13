@@ -65,7 +65,7 @@ void file_sort(char *file);
 // 从某个中间文件遍历特定的key
 char *getter(char *key, int partition_number);
 // partition_number+1长度数组
-// 用于记录某个partiton中getter遍历某个key时候的文件位置
+// 用于记录某个partiton中getter遍历某个key时候的文件位置：ftell(fp)
 // 一个key遍历完结会重置
 int *p_partion_getter_pos = NULL;
 
@@ -415,8 +415,12 @@ void Reduce(char *key, Getter get_next, int partition_number)
 {
     int count = 0;
     char *value;
-    while ((value = get_next(key, partition_number)) != NULL)
+    while ((value = get_next(key, partition_number)) != NULL){
         count++;
+
+        // 由reduce来释放并不合理，只是由于此处的getter实现方式
+        free(value);
+    }
     printf("%s %d\n", key, count);
 }
 
