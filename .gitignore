@@ -122,3 +122,6 @@ initial-xv6/src/.gdbinit.tmpl
 initial-xv6/src/.gitignore
 initial-xv6/src/1Makefile
 scheduling-xv6-lottery/tests-out/*
+vm-xv6-intro/tests-out/1.err
+vm-xv6-intro/tests-out/1.out
+vm-xv6-intro/tests-out/1.rc
