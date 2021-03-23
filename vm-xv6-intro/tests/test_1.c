@@ -27,6 +27,8 @@ main(int argc, char *argv[]) {
     mprotect(main, 2);
     int *p = (int *)main;
     printf(1, "XV6_TEST_OUTPUT %d %d %d %d\n\n", main, 4096, 1, p);
+    // uncomment this would generate err 5
+    // munprotect(main, 2);
     *(p+4) = 2;
 
     // null dereference trial

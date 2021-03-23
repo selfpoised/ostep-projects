@@ -178,6 +178,7 @@ sys_mprotect(void)
     *pte = *pte & (~PTE_W);
     cprintf("sys_mprotect %d %d %d\n", j, *pte, ~PTE_W);
   }
+  lcr3(V2P(pr->pgdir));
   cprintf("sys_mprotect called %d %d \n", addr, len);
 
   return 0;
@@ -193,7 +194,51 @@ int sys_munprotect(void)
      return -1;
   if(((uint)addr) % PGSIZE != 0)
     return -1;
-  
+
+  struct proc* pr = myproc();
+
+  // check range
+  for(int j=0; j<len; j++)
+  {
+    char *temp = addr + j * PGSIZE;
+
+    pde_t *pde;
+    pte_t *pgtab;
+    pde = &(pr->pgdir[PDX(temp)]);
+    if(*pde & PTE_P)
+    {
+      pgtab = (pte_t*)P2V(PTE_ADDR(*pde));
+      pte_t *pte = &pgtab[PTX(temp)];
+      if(*pte & PTE_P)
+      {
+        continue;
+      }
+      else
+      {
+        return -1;
+      }
+    }
+    else
+    {
+      return -1;
+    }
+  }
+
+  // change page table entry to readonly
+  for(int j=0; j<len; j++)
+  {
+    char *temp = addr + j * PGSIZE;
+
+    pde_t *pde;
+    pte_t *pgtab;
+    pde = &(pr->pgdir[PDX(temp)]);
+    pgtab = (pte_t*)P2V(PTE_ADDR(*pde));
+    pte_t *pte = &pgtab[PTX(temp)];
+    cprintf("sys_munprotect %d %d %d\n", j, *pte, temp);
+    *pte = *pte | PTE_W;
+    cprintf("sys_munprotect %d %d %d\n", j, *pte, PTE_W);
+  }
+  lcr3(V2P(pr->pgdir));
   cprintf("sys_munprotect called %d %d \n", addr, len);
 
   return 0;
