@@ -8,6 +8,10 @@
 #include "syscall.h"
 #include "pstat.h"
 
+// two great articles on function call stack with arguments passing
+//  https://www.tenouk.com/Bufferoverflowc/Bufferoverflow2a.html
+//  https://www.tenouk.com/Bufferoverflowc/Bufferoverflow3.html
+
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
@@ -107,6 +111,8 @@ extern int sys_uptime(void);
 extern int sys_getreadcount(void);
 extern int sys_settickets(void);
 extern int sys_getpinfo(void);
+extern int sys_mprotect(void);
+extern int sys_munprotect(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -132,7 +138,9 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_getreadcount]   sys_getreadcount,
 [SYS_settickets]   sys_settickets,
-[SYS_getpinfo]   sys_getpinfo
+[SYS_getpinfo]   sys_getpinfo,
+[SYS_mprotect]   sys_mprotect,
+[SYS_munprotect]   sys_munprotect
 };
 
 _Atomic int readcount = 0;
