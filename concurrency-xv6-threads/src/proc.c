@@ -239,6 +239,61 @@ fork(void)
   return pid;
 }
 
+int fork_thread(void(*fcn)(void *, void *), void *arg1, void *arg2, void *stack)
+{
+  int i, pid;
+  struct proc *np;
+  struct proc *curproc = myproc();
+
+  // Allocate process.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  np->pgdir = curproc->pgdir;
+
+  np->sz = curproc->sz;
+  np->parent = curproc;
+  *np->tf = *curproc->tf;
+
+  // ref: https://ppan-brian.medium.com/context-switch-from-xv6-aedcb1246cd
+  // user space instruction pointer
+  (*np->tf).eip = (uint)fcn;
+  (*np->tf).esp = (uint)stack + KSTACKSIZE;
+  (*np->tf).esp -= 4;
+  *(uint*)(*np->tf).esp = (uint)arg2;
+  (*np->tf).esp -= 4;
+  *(uint*)(*np->tf).esp = (uint)arg1;
+  (*np->tf).esp -= 4;
+  *(uint*)(*np->tf).esp = (uint)0xffffffff;
+
+  // Clear %eax so that fork returns 0 in the child.
+  np->tf->eax = 0;
+
+  for(i = 0; i < NOFILE; i++)
+    if(curproc->ofile[i])
+      np->ofile[i] = filedup(curproc->ofile[i]);
+  np->cwd = idup(curproc->cwd);
+
+  safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+
+  pid = np->pid;
+
+  acquire(&ptable.lock);
+
+  np->state = RUNNABLE;
+  np->tickets = curproc->tickets;
+
+  release(&ptable.lock);
+
+  return pid;
+}
+
+int exit_thread(void **stack)
+{
+  return 0;
+}
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
