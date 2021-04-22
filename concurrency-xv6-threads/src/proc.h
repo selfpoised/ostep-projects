@@ -53,6 +53,8 @@ struct proc {
   // extended variables to support Lottery Scheduler
   int tickets;                 // the number of tickets this process has
   int ticks;                   // the number of ticks each process has accumulated
+
+  char *thread_stack;          // user stack of forked thread passed by thread_create
 };
 
 // Process memory is laid out contiguously, low addresses first:

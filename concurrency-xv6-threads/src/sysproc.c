@@ -261,18 +261,19 @@ int sys_clone(void)
      return -1;
   if(argptr(3, (void*)&stack, sizeof(void *)) < 0)
      return -1;
-
+  cprintf("\nXV6_TEST_OUTPUT sys_clone %d %d\n", stack, *(uint *)stack);
   int pid = fork_thread(fcn, arg1, arg2, stack);
   return pid;
 }
 
 int sys_join(void)
 {
-  //void *stack;
+  void **stack;
 
-  // if(argptr(0, (void*)&stack, sizeof(void *)) < 0)
-  //    return -1;
-  cprintf("\n XV6_TEST_OUTPUT sys_join\n");
+  if(argptr(0, (void*)&stack, sizeof(void *)) < 0)
+     return -1;
 
-  return wait_thread(0);
+  int pid = wait_thread(stack);
+  cprintf("\nXV6_TEST_OUTPUT sys_join %d %d\n", stack, *(uint *)stack);
+  return pid;
 }

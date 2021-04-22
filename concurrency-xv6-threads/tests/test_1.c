@@ -19,7 +19,7 @@ main(int argc, char *argv[]) {
         printf(1, "\nXV6_TEST_OUTPUT parent pid=%d loop %d\n", getpid(), i);
     }
     int thread_pid = thread_join();
-    printf(1, "\nXV6_TEST_OUTPUT parent pid=%d joined thread pid %d\n", pid, thread_pid);
+    printf(1, "\nXV6_TEST_OUTPUT parent pid=%d joined thread pid %d\n", getpid(), thread_pid);
 }
 
 void

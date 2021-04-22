@@ -258,6 +258,8 @@ int fork_thread(void(*fcn)(void *, void *), void *arg1, void *arg2, void *stack)
 
   // ref: https://ppan-brian.medium.com/context-switch-from-xv6-aedcb1246cd
   // user space instruction pointer
+  np->thread_stack = (char *)stack;
+  cprintf("\nXV6_TEST_OUTPUT thread_stack set %d %d\n", (uint)np->thread_stack, *(uint *)stack);
   (*np->tf).eip = (uint)fcn;
   (*np->tf).esp = (uint)stack + KSTACKSIZE;
   (*np->tf).esp -= 4;
@@ -321,6 +323,11 @@ int wait_thread(void **stack)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+
+        // return user stack to be freed
+        uint *tp = *stack;
+        *(uint *)tp = (uint)p->thread_stack;
+
         release(&ptable.lock);
         return pid;
       }
