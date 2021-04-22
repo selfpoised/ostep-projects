@@ -10,7 +10,7 @@
 
 extern int inner_getpinfo(struct pstat *p);
 extern int fork_thread(void(*fcn)(void *, void *), void *arg1, void *arg2, void *stack);
-extern int exit_thread(void **stack);
+extern int wait_thread(void **stack);
 
 int
 sys_fork(void)
@@ -268,10 +268,11 @@ int sys_clone(void)
 
 int sys_join(void)
 {
-  void *stack;
+  //void *stack;
 
-  if(argptr(0, (void*)&stack, sizeof(void *)) < 0)
-     return -1;
+  // if(argptr(0, (void*)&stack, sizeof(void *)) < 0)
+  //    return -1;
+  cprintf("\n XV6_TEST_OUTPUT sys_join\n");
 
-  return exit_thread(&stack);
+  return wait_thread(0);
 }

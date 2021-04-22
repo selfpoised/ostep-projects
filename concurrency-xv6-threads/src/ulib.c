@@ -122,11 +122,16 @@ thread_create(void (*start_routine)(void *, void *), void *arg1, void *arg2)
   return pid;
 }
 
+// An int thread_join() call should also be created, 
+// which calls the underlying join() system call, frees the user stack, 
+// and then returns. It returns the waited-for PID (when successful), -1 otherwise
 int 
 thread_join()
 {
-  void *stack = 0;
+  void **stack = 0;
   int pid = join(stack);
-  free(stack);
+  // if(*stack != 0){
+  //   free(*stack);
+  // }
   return pid;
 }

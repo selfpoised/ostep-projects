@@ -265,6 +265,12 @@ int fork_thread(void(*fcn)(void *, void *), void *arg1, void *arg2, void *stack)
   (*np->tf).esp -= 4;
   *(uint*)(*np->tf).esp = (uint)arg1;
   (*np->tf).esp -= 4;
+  // by setting 0xffffffff it will cause a trap like:
+  // trap 14 err 5 on cpu 0 eip 0xffffffff addr 0xffffffff--kill proc
+  // which will lead to exit being called in trap.c line 102
+  // (if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER))
+  // thus with thread zombie state set, it can be waited in main thread 
+  // to free resources
   *(uint*)(*np->tf).esp = (uint)0xffffffff;
 
   // Clear %eax so that fork returns 0 in the child.
@@ -289,9 +295,46 @@ int fork_thread(void(*fcn)(void *, void *), void *arg1, void *arg2, void *stack)
   return pid;
 }
 
-int exit_thread(void **stack)
+int wait_thread(void **stack)
 {
-  return 0;
+  struct proc *p;
+  int havekids, pid;
+  struct proc *curproc = myproc();
+
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for exited children.
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->parent != curproc)
+        continue;
+      havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+        pid = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        // can not free pgdir, because it is thread wait
+        // freevm(p->pgdir);
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        p->state = UNUSED;
+        release(&ptable.lock);
+        return pid;
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || curproc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(curproc, &ptable.lock);  //DOC: wait-sleep
+  }
 }
 
 // Exit the current process.  Does not return.
